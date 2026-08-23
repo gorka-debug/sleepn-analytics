@@ -855,51 +855,15 @@ function mergeAndInit() {
       return r.json();
     })
     .then(function(resp) {
+      // El JSON de GitHub ya tiene todos los datos acumulados
       var fresh = resp.record || resp;
-
-      // Normalizar reviews — puede ser array o string JSON o {reviews:[...]}
-      var newReviews = fresh.reviews || [];
-      if(typeof newReviews === 'string') {
-        try { var parsed = JSON.parse(newReviews); newReviews = parsed.reviews || parsed; } catch(e) { newReviews = []; }
+      if(fresh && fresh.reviews && Array.isArray(fresh.reviews) && fresh.reviews.length > 0) {
+        D = fresh;
       }
-      if(newReviews && newReviews.reviews) newReviews = newReviews.reviews;
-
-      // Normalizar maintenance
-      var newMaint = fresh.maintenance || [];
-      if(typeof newMaint === 'string') {
-        try { var parsedM = JSON.parse(newMaint); newMaint = parsedM.maintenance || parsedM; } catch(e) { newMaint = []; }
-      }
-      if(newMaint && newMaint.maintenance) newMaint = newMaint.maintenance;
-
-      // Fusionar reviews nuevas
-      if(Array.isArray(newReviews) && newReviews.length > 0) {
-        var ids = {};
-        D.reviews.forEach(function(r) { ids[r.booking_id] = true; });
-        newReviews.forEach(function(r) {
-          if(!ids[r.booking_id]) D.reviews.push(r);
-        });
-      }
-
-      // Fusionar mantenimiento
-      if(Array.isArray(newMaint) && newMaint.length > 0) {
-        var byId = {};
-        D.maintenance.forEach(function(m, i) { byId[m.id] = i; });
-        newMaint.forEach(function(m) {
-          if(byId[m.id] !== undefined) {
-            D.maintenance[byId[m.id]].done = m.done;
-            D.maintenance[byId[m.id]].done_at = m.done_at;
-            D.maintenance[byId[m.id]].resolution_hours = m.resolution_hours;
-          } else {
-            D.maintenance.push(m);
-          }
-        });
-      }
-
-      if(fresh.generated_at) D.generated_at = fresh.generated_at;
       init();
     })
     .catch(function(err) {
-      console.warn('JSONBin no disponible, usando datos historicos:', err.message);
+      console.warn('JSON no disponible, usando datos historicos:', err.message);
       init();
     });
 }
